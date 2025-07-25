@@ -55,8 +55,8 @@ const AudioUploader = ({ onData }) => {
 
   // validación (5 MB máx)
   const { valid, error: validationError } = useFileValidation(file, {
-    types: ['audio/wav', 'audio/mpeg', 'audio/mp3'],
-    maxSize: 5 * 1024 * 1024, // 5 MB en bytes
+    types: ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/aac', 'audio/ogg'],
+    maxSize: 300 * 1024 * 1024, // 5 MB en bytes
   });
 
   // ─── selección de archivo ────────────────────────────────
