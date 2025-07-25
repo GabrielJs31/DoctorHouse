@@ -11,11 +11,11 @@ import api from './api';
  */
 export const procesarAudio = async (audioFile) => {
   const form = new FormData();
-  form.append('audio', audioFile);
+  form.append('file', audioFile);
 
   // POST / → devuelve { status:"ok", extracted_data: {...} }
-  const resp = await api.post('/', form, {
+  const { data } = await api.post('/transcribe', form, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
-  return resp.data.extracted_data; // :contentReference[oaicite:2]{index=2}
+  return data?.extracted_data ?? data; // :contentReference[oaicite:2]{index=2}
 };

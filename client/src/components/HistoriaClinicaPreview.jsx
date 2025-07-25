@@ -5,10 +5,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-  Card,
-  CardHeader,
   CardContent,
-  Divider,
   Grid,
   Typography,
   Box
@@ -29,40 +26,45 @@ const item = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
+// ─── HistoriaClinicaPreview.jsx  (sustituye SOLO esta parte) ───────────────────
+const renderValue = (v) => {
+  // Si el valor es un objeto (p.ej. datos_personales), desglósalo campo-a-campo
+  if (v && typeof v === 'object') {
+    return Object.entries(v).map(([k, val]) => (
+      <Typography variant="body2" key={k}>
+        • <strong>{k.replace('_', ' ')}:</strong> {val ?? '—'}
+      </Typography>
+    ));
+  }
+  // Si es primitivo, muéstralo tal cual
+  return v ?? '—';
+};
+
 const HistoriaClinicaPreview = ({ data }) => (
   <motion.div variants={container} initial="hidden" animate="visible">
-    <Card sx={{ mt: 4, boxShadow: 4, borderRadius: 2 }}>
-      {/* Header con espacio para logo + título */}
-      <CardHeader
-        avatar={<MedicalInformationIcon color="primary" fontSize="large" />}
-        title={<Typography variant="h5">Historia Clínica</Typography>}
-        sx={{ pb: 0 }}
-      />
-      <Divider sx={{ my: 1 }} />
+    {/* …header y otros elementos… */}
+    <CardContent>
+      <Grid container spacing={3}>
+        {Object.entries(data).map(([key, value]) => (
+          <Grid item xs={12} sm={6} key={key}>
+            <motion.div variants={item}>
+              <Box display="flex" alignItems="center" mb={0.5}>
+                <MedicalInformationIcon sx={{ mr: 1, color: 'primary.main' }} fontSize="small" />
+                <Typography variant="subtitle2" color="textSecondary">
+                  {key.replace('_', ' ')}
+                </Typography>
+              </Box>
 
-      {/* Campos en dos columnas, cada uno animado */}
-      <CardContent>
-        <Grid container spacing={3}>
-          {Object.entries(data).map(([key, value]) => (
-            <Grid item xs={12} sm={6} key={key}>
-              <motion.div variants={item}>
-                <Box display="flex" alignItems="center" mb={0.5}>
-                  <MedicalInformationIcon
-                    sx={{ mr: 1, color: 'primary.main' }}
-                    fontSize="small"
-                  />
-                  <Typography variant="subtitle2" color="textSecondary">
-                    {key}
-                  </Typography>
-                </Box>
-                <Typography variant="body1">{value || '-'}</Typography>
-              </motion.div>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
+              {/* ⬇️ Usa la función segura */}
+              {renderValue(value)}
+            </motion.div>
+          </Grid>
+        ))}
+      </Grid>
+    </CardContent>
   </motion.div>
 );
+// ────────────────────────────────────────────────────────────────────────────────
+
 
 export default HistoriaClinicaPreview;
