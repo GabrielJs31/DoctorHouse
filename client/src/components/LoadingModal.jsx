@@ -1,10 +1,4 @@
-// src/components/LoadingModal.jsx
-/**
- * LoadingModal.jsx
- * Muestra un modal ampliado con un dato curioso de medicina e ícono asociado,
- * que cambia aleatoriamente cada 20 segundos.
- */
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,

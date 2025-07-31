@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://10.1.40.4:8080', // tu endpoint
+  baseURL: 'http://10.1.40.31:8080', // tu endpoint
   timeout: 0,                                    // 30s timeout
   headers: { Accept: 'application/json' },
 });

@@ -1,5 +1,4 @@
-// src/components/AudioUploader.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Card,
@@ -80,9 +79,8 @@ const AudioUploader = ({ onData }) => {
     setLoading(true);
 
     try {
-      // procesarAudio devuelve el objeto extraído (JSON)
       const extracted = await procesarAudio(file);
-      onData(extracted); // entrega al componente padre
+      onData(extracted);
     } catch (err) {
       setError(err.message ?? 'Error al procesar el audio');
     } finally {

@@ -1,7 +1,3 @@
-/**
- * useFileValidation
- * Valida tipo y tamaño del archivo
- */
 import { useState, useEffect } from 'react';
 
 const useFileValidation = (file, { types, maxSize }) => {

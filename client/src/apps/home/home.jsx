@@ -1,5 +1,4 @@
-// home.jsx: Orquesta las secciones de la demo
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Container, Typography } from '@mui/material';
 import AudioSection from './sections/AudioSection';
 import PreviewSection from './sections/PreviewSection';
