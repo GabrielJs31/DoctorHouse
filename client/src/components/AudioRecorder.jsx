@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { procesarAudio } from '../services/doctorHouseService';
-import { Button, Box, Typography, CircularProgress } from '@mui/material';
+import { Button, Box, Typography } from '@mui/material';
+import LoadingModal from './LoadingModal';
 
 const AudioRecorder = ({ onData }) => {
   const [recording, setRecording] = useState(false);
@@ -90,13 +91,8 @@ const AudioRecorder = ({ onData }) => {
       {audioURL && (
         <audio src={audioURL} controls style={{ marginTop: 8 }} />
       )}
-      {loading && <CircularProgress sx={{ mt: 2 }} />}
-      {result && (
-        <Box mt={2}>
-          <Typography variant="subtitle1">Respuesta del servidor:</Typography>
-          <pre style={{ textAlign: 'left', background: '#f5f5f5', padding: 8, borderRadius: 4, maxWidth: 400, overflowX: 'auto' }}>{JSON.stringify(result, null, 2)}</pre>
-        </Box>
-      )}
+      {/* Pantalla de carga tipo modal */}
+      <LoadingModal open={loading} />
     </Box>
   );
 };
