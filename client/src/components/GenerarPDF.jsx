@@ -113,12 +113,26 @@ const GenerarPDF = ({ data }) => {
       `FR: ${data.signos_vitales?.frecuencia_respiratoria || '-'}\nFC: ${data.signos_vitales?.frecuencia_cardíaca || '-'}\nPA: ${data.signos_vitales?.presión_arterial || '-'}\nSat O₂: ${data.signos_vitales?.saturación_oxígeno || '-'}\nTemp: ${data.signos_vitales?.temperatura_c || '-'}`
     );
 
-    // 7. Diagnóstico y Tratamiento lado a lado
+    // 7. Examen Físico
+    const ef = data.examen_físico || {};
+    agregarSeccion(
+      '7. Examen Físico',
+      `Peso (kg): ${ef.peso_kg || '-'}\nAltura (cm): ${ef.altura_cm || '-'}\nCabeza y cuello: ${ef.cabeza_cuello || '-'}\nTórax: ${ef.tórax || '-'}\nRSCS: ${ef.rscs || '-'}\nAbdomen: ${ef.abdomen || '-'}\nExtremidades: ${ef.extremidades || '-'}`
+    );
+
+    // 8. Índice de Masa Corporal
+    const imc = data.IMC || {};
+    agregarSeccion(
+      '8. Índice de Masa Corporal',
+      `Valor: ${imc.valor || '-'}\nClasificación: ${imc.clasificación || '-'}`
+    );
+
+    // 9. Diagnóstico y Tratamiento lado a lado
     doc.addPage();
     y = margin;
     doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
-    doc.text('7. Diagnóstico Presuntivo', margin, y);
-    doc.text('8. Tratamiento', pageWidth / 2 + margin, y);
+    doc.text('9. Diagnóstico Presuntivo', margin, y);
+    doc.text('10. Tratamiento', pageWidth / 2 + margin, y);
     y += 20;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
     const dx = doc.splitTextToSize(data.diagnóstico_y_tratamiento?.diagnóstico_presuntivo || '-', (pageWidth/2) - margin);

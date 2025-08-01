@@ -1,7 +1,9 @@
+// ...existing code...
 import React from 'react';
 import { Button } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 /**
  * ImprimirPDF.jsx
@@ -20,141 +22,149 @@ const ImprimirPDF = ({ data }) => {
     const doc = new jsPDF({ unit: 'pt', format: 'letter' });
     const margin = 40;
     const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const usableWidth = pageWidth - margin * 2;
-    const lineHeight = 16;
     let y = margin;
-    let pageCount = 1;
 
-    const nuevaPagina = () => {
-      doc.addPage();
-      pageCount++;
-      y = margin;
-    };
-
-    const imprimirTexto = (texto, x, yInicial) => {
-      const lineas = doc.splitTextToSize(texto, usableWidth);
-      let yActual = yInicial;
-      lineas.forEach(linea => {
-        if (yActual + lineHeight > pageHeight - margin - 20) {
-          nuevaPagina();
-        }
-        doc.text(linea, x, yActual);
-        yActual += lineHeight;
-      });
-      return yActual;
-    };
-
-    const agregarSeccion = (titulo, texto) => {
-      doc.setFillColor(220, 235, 247);
-      doc.rect(margin, y - 4, usableWidth, lineHeight + 8, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(20, 50, 100);
-      doc.text(titulo, margin + 4, y + lineHeight / 2);
-      y += lineHeight + 12;
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
-      y = imprimirTexto(texto, margin, y) + 10;
-    };
-
+    // Cabecera
     doc.setFillColor(10, 60, 120);
     doc.rect(0, 0, pageWidth, 60, 'F');
+    doc.setTextColor(255);
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
     doc.text('HISTORIA CLÍNICA', pageWidth / 2, 38, { align: 'center' });
-    y = 80;
+    y += 30;
 
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(20, 50, 100);
-    doc.text('1. Datos del paciente', margin, y);
-    y += lineHeight;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
+    // 1. Datos del paciente (tabla)
     const dp = data.datos_personales || {};
-    const dpFields = [
-      ['Nombre', dp.nombre],
-      ['Apellido', dp.apellido],
-      ['Cédula', dp.cédula],
-      ['Sexo', dp.sexo],
-      ['Tipo de sangre', dp.tipo_sangre],
-      ['F. nacimiento', dp.fecha_nacimiento],
-      ['Edad', dp.edad],
-      ['Teléfono', dp.teléfono],
-      ['Móvil', dp.móvil],
-      ['Fecha consulta', dp.fecha_consulta],
+    const dpRows = [
+      ['Nombre', dp.nombre || '-'],
+      ['Apellido', dp.apellido || '-'],
+      ['Cédula', dp.cédula || '-'],
+      ['Sexo', dp.sexo || '-'],
+      ['Tipo de sangre', dp.tipo_sangre || '-'],
+      ['Fecha nacimiento', dp.fecha_nacimiento || '-'],
+      ['Edad', dp.edad || '-'],
+      ['Teléfono', dp.teléfono || '-'],
+      ['Móvil', dp.móvil || '-'],
+      ['Fecha consulta', dp.fecha_consulta || '-'],
     ];
-    const cols = 2;
-    const colW = usableWidth / cols;
-    dpFields.forEach(([label, val], i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = margin + col * colW;
-      const yRow = y + row * lineHeight;
-      if (yRow > pageHeight - margin - 20) nuevaPagina();
-      doc.text(`${label}: ${val || '-'}`, x, yRow);
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      head: [['Campo', 'Valor']],
+      body: dpRows,
+      theme: 'grid',
+      headStyles: { fillColor: [220, 235, 247], textColor: [20, 50, 100], fontStyle: 'bold' },
+      styles: { fontSize: 11, cellPadding: 4 },
+      columnStyles: { 0: { cellWidth: 120, fontStyle: 'bold' }, 1: { cellWidth: 'auto' } },
     });
-    y += Math.ceil(dpFields.length / cols) * lineHeight + 20;
+    y = doc.lastAutoTable.finalY + 20;
 
-    agregarSeccion('2. Motivo de consulta', data.motivo_de_consulta?.motivo || '-');
-    agregarSeccion('3. Enfermedad actual', data.enfermedad_actual?.descripción || '-');
+    // Helper: sección con fondo y separación
+    const agregarSeccion = (titulo, texto) => {
+      const usableWidth = pageWidth - margin * 2;
+      const lineHeight = 14;
 
-    const ant = data.antecedentes || {};
-    const antTexto = [
-      `Personales: ${ant.personales || '-'}`,
-      `Alergias: ${ant.alergias || '-'}`,
-      `Medicamentos: ${ant.medicamentos || '-'}`,
-      `Familiares: ${ant.familiares || '-'}`,
-      `Quirúrgicos: ${ant.intervenciones_quirúrgicas || '-'}`,
-      `Coagulación: ${ant.problemas_coagulación || '-'}`,
-      `Anestésicos: ${ant.problemas_anestésicos || '-'}`,
-      `Cardiovasculares: ${ant.problemas_cardiovasculares || '-'}`,
-      `Fuma: ${ant.fuma || '-'}`,
-      `Alcohol: ${ant.alcohol || '-'}`,
-    ].join('\n');
-    agregarSeccion('4. Antecedentes', antTexto);
+      doc.setDrawColor(200);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 8;
 
-    const sv = data.signos_vitales || {};
-    const svTexto = [
-      `Peso (Kg): ${sv.peso_kg || '-'}`,
-      `FR (resp): ${sv.frecuencia_respiratoria || '-'}`,
-      `FC (lpm): ${sv.frecuencia_cardíaca || '-'}`,
-      `Presión: ${sv.presión_arterial || '-'}`,
-      `Sat. O2: ${sv.saturación_oxígeno || '-'}`,
-      `Temp (°C): ${sv.temperatura_c || '-'}`,
-    ].join('\n');
-    agregarSeccion('5. Signos vitales', svTexto);
+      doc.setFillColor(220, 235, 247);
+      doc.rect(margin, y - lineHeight, usableWidth, lineHeight + 6, 'F');
+      doc.setTextColor(20, 50, 100);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(titulo, margin + 4, y);
+      y += lineHeight + 10;
 
-    nuevaPagina();
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(20, 50, 100);
-    doc.text('6. Diagnóstico presuntivo', margin, y);
-    doc.text('7. Tratamiento', margin + usableWidth / 2, y);
-    y += lineHeight;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    const dxLines = doc.splitTextToSize(data.diagnóstico_y_tratamiento?.diagnóstico_presuntivo || '-', usableWidth / 2 - 10);
-    const txLines = doc.splitTextToSize(data.diagnóstico_y_tratamiento?.tratamiento || '-', usableWidth / 2 - 10);
-    const maxL = Math.max(dxLines.length, txLines.length);
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      const lines = doc.splitTextToSize(texto, usableWidth);
+      lines.forEach(line => {
+        if (y + lineHeight > doc.internal.pageSize.getHeight() - margin) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(line, margin, y);
+        y += lineHeight;
+      });
+      y += 10;
+    };
+
+    // 2. Motivo de Consulta
+    agregarSeccion(
+      '2. Motivo de Consulta',
+      `Motivo: ${data.motivo_consulta?.motivo || '-'}\nLugar: ${data.motivo_consulta?.lugar || '-'}`
+    );
+
+    // 3. Enfermedad Actual
+    agregarSeccion(
+      '3. Enfermedad Actual',
+      `Descripción: ${data.enfermedad_actual?.descripción || '-'}\nTratamiento: ${data.enfermedad_actual?.tratamiento || '-'}\nExámenes: ${data.enfermedad_actual?.examenes_requeridos || '-'}\nDerivación: ${data.enfermedad_actual?.derivacion_especialista || '-'}\nRecomendaciones: ${data.enfermedad_actual?.recomendaciones || '-'}`
+    );
+
+    // 4. Posibles Enfermedades (numeradas)
+    const peEntries = Object.values(data.posibles_enfermedades || {});
+    const peTexto = peEntries.length
+      ? peEntries.map((v, idx) =>
+          `Posible Enfermedad ${idx + 1}: ${v.description || '-'}\nTratamiento: ${v.tratamiento || '-'}\nExámenes: ${v.examenes_requeridos || '-'}\nDerivación: ${v.derivacion_especialista || '-'}\nRecomendaciones: ${v.recomendaciones || '-'}`
+        ).join('\n\n')
+      : '-';
+    agregarSeccion('4. Posibles Enfermedades', peTexto);
+
+    // 5. Antecedentes
+    agregarSeccion(
+      '5. Antecedentes',
+      `Personales: ${data.antecedentes?.personales || '-'}\nAlergias: ${data.antecedentes?.alergias || '-'}\nMedicamentos: ${data.antecedentes?.medicamentos || '-'}\nFamiliares: ${data.antecedentes?.familiares || '-'}\nQuirúrgicos: ${data.antecedentes?.intervenciones_quirúrgicas || '-'}\nCoagulación: ${data.antecedentes?.problemas_coagulación || '-'}\nAnestésicos: ${data.antecedentes?.problemas_anestésicos || '-'}\nCardiovasculares: ${data.antecedentes?.problemas_cardiovasculares || '-'}\nFuma: ${data.antecedentes?.fuma || '-'}\nAlcohol: ${data.antecedentes?.alcohol || '-'}`
+    );
+
+    // 6. Signos Vitales
+    agregarSeccion(
+      '6. Signos Vitales',
+      `FR: ${data.signos_vitales?.frecuencia_respiratoria || '-'}\nFC: ${data.signos_vitales?.frecuencia_cardíaca || '-'}\nPA: ${data.signos_vitales?.presión_arterial || '-'}\nSat O₂: ${data.signos_vitales?.saturación_oxígeno || '-'}\nTemp: ${data.signos_vitales?.temperatura_c || '-'}`
+    );
+
+    // 7. Examen Físico
+    const ef = data.examen_físico || {};
+    agregarSeccion(
+      '7. Examen Físico',
+      `Peso (kg): ${ef.peso_kg || '-'}\nAltura (cm): ${ef.altura_cm || '-'}\nCabeza y cuello: ${ef.cabeza_cuello || '-'}\nTórax: ${ef.tórax || '-'}\nRSCS: ${ef.rscs || '-'}\nAbdomen: ${ef.abdomen || '-'}\nExtremidades: ${ef.extremidades || '-'}`
+    );
+
+    // 8. Índice de Masa Corporal
+    const imc = data.IMC || {};
+    agregarSeccion(
+      '8. Índice de Masa Corporal',
+      `Valor: ${imc.valor ?? '-'}\nClasificación: ${imc.clasificacion ?? '-'}`
+    );
+
+    // 9. Diagnóstico y Tratamiento lado a lado
+    doc.addPage();
+    y = margin;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+    doc.text('9. Diagnóstico Presuntivo', margin, y);
+    doc.text('10. Tratamiento', pageWidth / 2 + margin, y);
+    y += 20;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+    const dx = doc.splitTextToSize(data.diagnóstico_y_tratamiento?.diagnóstico_presuntivo || '-', (pageWidth/2) - margin);
+    const tx = doc.splitTextToSize(data.diagnóstico_y_tratamiento?.tratamiento || '-', (pageWidth/2) - margin);
+    const maxL = Math.max(dx.length, tx.length);
     for (let i = 0; i < maxL; i++) {
-      const posY = y + i * lineHeight;
-      if (posY > pageHeight - margin - 20) {
-        nuevaPagina();
+      let posY = y + i * 14;
+      if (posY > doc.internal.pageSize.getHeight() - margin) {
+        doc.addPage(); y = margin; posY = y + i * 14;
       }
-      if (dxLines[i]) doc.text(dxLines[i], margin, posY);
-      if (txLines[i]) doc.text(txLines[i], margin + usableWidth / 2 + 10, posY);
+      if (dx[i]) doc.text(dx[i], margin, posY);
+      if (tx[i]) doc.text(tx[i], pageWidth / 2 + margin, posY);
     }
 
-    const totalPages = pageCount;
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFontSize(10);
-      doc.setTextColor(150);
-      doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 20, { align: 'center' });
+    // Pie de página
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= pageCount; p++) {
+      doc.setPage(p);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(150);
+      doc.text(`Página ${p} de ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 20, { align: 'center' });
     }
 
     return doc;
