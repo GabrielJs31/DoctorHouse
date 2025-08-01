@@ -1,18 +1,10 @@
+// GenerarPDF.jsx
 import React from 'react';
 import { Button } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { jsPDF } from 'jspdf';
 
-/**
- * GenerarPDF.jsx
- * Componente que genera un PDF estilizado con la ficha médica,
- * paginación automática, sección de encabezado con color y pie de página.
- */
 const GenerarPDF = ({ data }) => {
-
-  /**
-   * crearPDF: arma y descarga el PDF completo.
-   */
   const crearPDF = () => {
     const doc = new jsPDF({ unit: 'pt', format: 'letter' });
     const margin = 40;
@@ -23,17 +15,17 @@ const GenerarPDF = ({ data }) => {
     let y = margin;
     let pageCount = 1;
 
-    // Helper: salto de página y actualizar contador
+    // Añade una nueva página y actualiza el contador y posición Y
     const nuevaPagina = () => {
       doc.addPage();
       pageCount++;
       y = margin;
     };
 
-    // Helper: imprime texto con ajuste y salto de página
-    const imprimirTexto = (texto, x, yInicial) => {
+    // Imprime un bloque de texto ajustado al ancho usable, manejando salto de página
+    const imprimirTexto = (texto, x, yInicio) => {
       const lineas = doc.splitTextToSize(texto, usableWidth);
-      let yActual = yInicial;
+      let yActual = yInicio;
       lineas.forEach(linea => {
         if (yActual + lineHeight > pageHeight - margin - 20) {
           nuevaPagina();
@@ -44,57 +36,59 @@ const GenerarPDF = ({ data }) => {
       return yActual;
     };
 
-    // Helper: sección con fondo de color y título
+    // Dibuja el encabezado de sección y luego el texto
     const agregarSeccion = (titulo, texto) => {
-      // fondo semitransparente
+      // Fondo de título
       doc.setFillColor(220, 235, 247);
       doc.rect(margin, y - 4, usableWidth, lineHeight + 8, 'F');
-      // título
+      // Título
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
       doc.setTextColor(20, 50, 100);
       doc.text(titulo, margin + 4, y + lineHeight / 2);
       y += lineHeight + 12;
-      // contenido
+      // Texto de sección
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
       y = imprimirTexto(texto, margin, y) + 10;
     };
 
-    // ─── Cabecera Decorada ───────────────────────────────────────────────
-    // fondo azul oscuro
+    // ─── Cabecera ─────────────────────────────────────────────────────────
     doc.setFillColor(10, 60, 120);
     doc.rect(0, 0, pageWidth, 60, 'F');
-    // logo (si tuvieras imagen en base64, la usarías aquí)
-    // doc.addImage(logoData, 'PNG', margin, 10, 40, 40);
-    // título blanco
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
     doc.text('HISTORIA CLÍNICA', pageWidth / 2, 38, { align: 'center' });
     y = 80;
 
-    // ─── Datos del paciente ──────────────────────────────────────────────
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(20, 50, 100);
-    doc.text('1. Datos del paciente', margin, y);
-    y += lineHeight;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    const dp = data.datos_personales || {};
+    // ─── 1. Datos del paciente ────────────────────────────────────────────
+    const dp = {
+      nombre: data?.datos_personales?.nombre || '-',
+      apellido: data?.datos_personales?.apellido || '-',
+      cédula: data?.datos_personales?.cédula || '-',
+      sexo: data?.datos_personales?.sexo || '-',
+      tipo_sangre: data?.datos_personales?.tipo_sangre || '-',
+      fecha_nacimiento: data?.datos_personales?.fecha_nacimiento || '-',
+      edad: data?.datos_personales?.edad || '-',
+      teléfono: data?.datos_personales?.teléfono || '-',
+      móvil: data?.datos_personales?.móvil || '-',
+      fecha_consulta: data?.datos_personales?.fecha_consulta || '-',
+    };
     const dpFields = [
       ['Nombre', dp.nombre],
       ['Apellido', dp.apellido],
       ['Cédula', dp.cédula],
       ['Sexo', dp.sexo],
       ['Tipo de sangre', dp.tipo_sangre],
-      ['F. nacimiento', dp.fecha_nacimiento],
+      ['Fecha nacimiento', dp.fecha_nacimiento],
       ['Edad', dp.edad],
       ['Teléfono', dp.teléfono],
       ['Móvil', dp.móvil],
       ['Fecha consulta', dp.fecha_consulta],
     ];
+    // Imprime en dos columnas
     const cols = 2;
     const colW = usableWidth / cols;
     dpFields.forEach(([label, val], i) => {
@@ -103,16 +97,53 @@ const GenerarPDF = ({ data }) => {
       const x = margin + col * colW;
       const yRow = y + row * lineHeight;
       if (yRow > pageHeight - margin - 20) nuevaPagina();
-      doc.text(`${label}: ${val || '-'}`, x, yRow);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(`${label}:`, x, yRow);
+      doc.setFont('helvetica', 'normal');
+      doc.text(val.toString(), x + 80, yRow);
     });
     y += Math.ceil(dpFields.length / cols) * lineHeight + 20;
 
-    // ─── Secciones textuales ─────────────────────────────────────────────
-    agregarSeccion('2. Motivo de consulta', data.motivo_de_consulta?.motivo || '-');
-    agregarSeccion('3. Enfermedad actual', data.enfermedad_actual?.descripción || '-');
+    // ─── 2. Motivo de Consulta ────────────────────────────────────────────
+    const mc = data?.motivo_consulta || {};
+    const mcTexto = [
+      `Motivo: ${mc.motivo || '-'}`,
+      `Lugar: ${mc.lugar || '-'}`,
+    ].join('\n');
+    agregarSeccion('2. Motivo de Consulta', mcTexto);
 
-    // Antecedentes agrupados
-    const ant = data.antecedentes || {};
+    // ─── 3. Enfermedad Actual ─────────────────────────────────────────────
+    const ea = data?.enfermedad_actual || {};
+    const eaTexto = [
+      `Descripción: ${ea.descripción || '-'}`,
+      `Tratamiento: ${ea.tratamiento || '-'}`,
+      `Exámenes requeridos: ${ea.examenes_requeridos || '-'}`,
+      `Derivación especialista: ${ea.derivacion_especialista || '-'}`,
+      `Recomendaciones: ${ea.recomendaciones || '-'}`,
+    ].join('\n');
+    agregarSeccion('3. Enfermedad Actual', eaTexto);
+
+    // ─── 4. Posibles Enfermedades ─────────────────────────────────────────
+    const pe = data?.posibles_enfermedades || {};
+    const peTexto =
+      Object.entries(pe)
+        .map(
+          ([key, val]) =>
+            [
+              `Enfermedad: ${key}`,
+              `Descripción: ${val.description || '-'}`,
+              `Tratamiento: ${val.tratamiento || '-'}`,
+              `Exámenes requeridos: ${val.examenes_requeridos || '-'}`,
+              `Derivación especialista: ${val.derivacion_especialista || '-'}`,
+              `Recomendaciones: ${val.recomendaciones || '-'}`,
+            ].join('\n')
+        )
+        .join('\n\n') || '-';
+    agregarSeccion('4. Posibles Enfermedades', peTexto);
+
+    // ─── 5. Antecedentes ──────────────────────────────────────────────────
+    const ant = data?.antecedentes || {};
     const antTexto = [
       `Personales: ${ant.personales || '-'}`,
       `Alergias: ${ant.alergias || '-'}`,
@@ -125,52 +156,58 @@ const GenerarPDF = ({ data }) => {
       `Fuma: ${ant.fuma || '-'}`,
       `Alcohol: ${ant.alcohol || '-'}`,
     ].join('\n');
-    agregarSeccion('4. Antecedentes', antTexto);
+    agregarSeccion('5. Antecedentes', antTexto);
 
-    const sv = data.signos_vitales || {};
+    // ─── 6. Signos Vitales ───────────────────────────────────────────────
+    const sv = data?.signos_vitales || {};
     const svTexto = [
-      `Peso (Kg): ${sv.peso_kg || '-'}`,
       `FR (resp): ${sv.frecuencia_respiratoria || '-'}`,
       `FC (lpm): ${sv.frecuencia_cardíaca || '-'}`,
-      `Presión: ${sv.presión_arterial || '-'}`,
-      `Sat. O2: ${sv.saturación_oxígeno || '-'}`,
+      `Presión arterial: ${sv.presión_arterial || '-'}`,
+      `Sat. O₂: ${sv.saturación_oxígeno || '-'}`,
       `Temp (°C): ${sv.temperatura_c || '-'}`,
     ].join('\n');
-    agregarSeccion('5. Signos vitales', svTexto);
+    agregarSeccion('6. Signos Vitales', svTexto);
 
-    // ─── Diagnóstico y tratamiento ───────────────────────────────────────
+    // ─── 7. Diagnóstico presuntivo & 8. Tratamiento ──────────────────────
     nuevaPagina();
-    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
     doc.setTextColor(20, 50, 100);
-    doc.text('6. Diagnóstico presuntivo', margin, y);
-    doc.text('7. Tratamiento', margin + usableWidth / 2, y);
-    y += lineHeight;
-    doc.setFontSize(12);
+    doc.text('7. Diagnóstico Presuntivo', margin, y);
+    doc.text('8. Tratamiento', margin + usableWidth / 2, y);
+    y += lineHeight + 4;
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
     doc.setTextColor(0, 0, 0);
-    const dxLines = doc.splitTextToSize(data.diagnóstico_y_tratamiento?.diagnóstico_presuntivo || '-', usableWidth / 2 - 10);
-    const txLines = doc.splitTextToSize(data.diagnóstico_y_tratamiento?.tratamiento || '-', usableWidth / 2 - 10);
+
+    const dxLines = doc.splitTextToSize(
+      data?.diagnóstico_y_tratamiento?.diagnóstico_presuntivo || '-',
+      usableWidth / 2 - 10
+    );
+    const txLines = doc.splitTextToSize(
+      data?.diagnóstico_y_tratamiento?.tratamiento || '-',
+      usableWidth / 2 - 10
+    );
     const maxL = Math.max(dxLines.length, txLines.length);
     for (let i = 0; i < maxL; i++) {
       const posY = y + i * lineHeight;
-      if (posY > pageHeight - margin - 20) {
-        nuevaPagina();
-      }
+      if (posY > pageHeight - margin - 20) nuevaPagina();
       if (dxLines[i]) doc.text(dxLines[i], margin, posY);
-      if (txLines[i]) doc.text(txLines[i], margin + usableWidth / 2 + 10, posY);
+      if (txLines[i]) doc.text(txLines[i], margin + usableWidth / 2, posY);
     }
 
-    // ─── Pie de página con numeración ───────────────────────────────────
-    const totalPages = pageCount;
-    for (let i = 1; i <= totalPages; i++) {
+    // ─── Pie de página ───────────────────────────────────────────────────
+    for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.setTextColor(150);
-      doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 20, { align: 'center' });
+      doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 20, {
+        align: 'center',
+      });
     }
 
-    // Guardar archivo
     doc.save('historia_clinica.pdf');
   };
 
