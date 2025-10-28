@@ -3,6 +3,8 @@ import { Box, IconButton, TextField, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import { getLogger } from '../services/logs';
+const log = getLogger('preview.editable_field');
 
 const EditableField = ({ label, value, onSave }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -11,11 +13,13 @@ const EditableField = ({ label, value, onSave }) => {
   const handleSave = () => {
     setIsEditing(false);
     onSave(draft);
+    log.info('field_saved', { label, len: (draft || '').length });
   };
 
   const handleCancel = () => {
     setDraft(value ?? '');
     setIsEditing(false);
+    log.debug('field_edit_cancel', { label });
   };
 
   return (
@@ -42,7 +46,7 @@ const EditableField = ({ label, value, onSave }) => {
 
       <IconButton
         size="small"
-        onClick={isEditing ? handleSave : () => setIsEditing(true)}
+        onClick={isEditing ? handleSave : () => { setIsEditing(true); log.debug('field_edit_start', { label }); }}
       >
         {isEditing ? <CheckIcon /> : <EditIcon />}
       </IconButton>

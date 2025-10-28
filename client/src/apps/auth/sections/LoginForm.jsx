@@ -1,75 +1,106 @@
-import { Box, TextField, Button, CircularProgress, Alert, Link, Typography } from "@mui/material";
 import { useState } from "react";
-import { useAuth } from "../../../services/firebase/AuthContext";
-import { useTranslation } from "react-i18next";
+import {
+  Box,
+  Stack,
+  TextField,
+  Button,
+  Divider,
+  IconButton,
+  InputAdornment,
+} from "@mui/material";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { useAuth } from "../../../services/auth/firebase/AuthContext";
+import { mapAuthError } from "../utils/errorMap";
+import { getLogger } from "../../../services/logs";
+const log = getLogger("auth.login");
 
-export default function LoginForm({ onSuccess, onSwitch }) {
-  const { t } = useTranslation("auth");
-  const { loginWithEmail } = useAuth();
+export default function LoginForm({ setMode, setMsg, onSuccess }) {
+  const { loginWithEmail, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
-  const [pass,  setPass]  = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState("");
+  const [pass, setPass] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = async e => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setError(""); setLoading(true);
+    setMsg({ type: "", text: "" });
+    setBusy(true);
+    const emailDomain = (email.split("@")[1] || "").toLowerCase();
+    log.info("submit_email_login", { emailDomain });
     try {
-      await loginWithEmail(email, pass);
-      onSuccess();
-    } catch (err) {
-      setError(err.message);
+      await loginWithEmail(email.trim(), pass);
+      log.info("login_success_email");
+      onSuccess?.();
+    } catch (e2) {
+      log.warn("login_failed_email", { code: e2?.code || "unknown" });
+      setMsg({ type: "error", text: mapAuthError(e2.code, e2.message) });
     } finally {
-      setLoading(false);
+      setBusy(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setMsg({ type: "", text: "" });
+    setBusy(true);
+    log.info("submit_google_login");
+    try {
+      await loginWithGoogle();
+      log.info("login_success_google");
+      onSuccess?.();
+    } catch (e2) {
+      log.warn("login_failed_google", { code: e2?.code || "unknown" });
+      setMsg({ type: "error", text: mapAuthError(e2.code, e2.message) });
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate>
-      {error && <Alert severity="error" sx={{ mb:2 }}>{error}</Alert>}
-
-      <TextField
-        label={t("login.email")}
-        type="email"
-        fullWidth required
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        sx={{ mb:2 }}
-      />
-
-      <TextField
-        label={t("login.password")}
-        type="password"
-        fullWidth required
-        value={pass}
-        onChange={e => setPass(e.target.value)}
-        sx={{ mb:2 }}
-      />
-
-      <Button
-        type="submit"
-        variant="contained"
-        fullWidth
-        disabled={loading}
-      >
-        {loading 
-          ? <CircularProgress size={24} />
-          : t("login.submit")
-        }
-      </Button>
-
-      <Typography align="center" sx={{ mt:1 }}>
-        <Link component="button" onClick={() => onSwitch("reset")}>
-          {t("login.forgotPassword")}
-        </Link>
-      </Typography>
-
-      <Typography align="center" sx={{ mt:1 }}>
-        {t("login.noAccount")}{" "}
-        <Link component="button" onClick={() => onSwitch("register")}>
-          {t("login.register")}
-        </Link>
-      </Typography>
+    <Box component="form" onSubmit={handleLogin}>
+      <Stack spacing={2}>
+        <TextField
+          label="Correo"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          fullWidth
+          required
+          autoFocus
+        />
+        <TextField
+          label="Contraseña"
+          type={showPass ? "text" : "password"}
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
+          fullWidth
+          required
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setShowPass((s) => !s)} edge="end">
+                  {showPass ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Button type="submit" variant="contained" disabled={busy}>
+          Iniciar sesión
+        </Button>
+        <Button variant="outlined" onClick={handleGoogle} disabled={busy}>
+          Continuar con Google
+        </Button>
+        <Divider />
+        <Stack direction="row" justifyContent="space-between">
+          <Button size="small" onClick={() => setMode("reset")}>
+            ¿Olvidaste tu contraseña?
+          </Button>
+          <Button size="small" onClick={() => setMode("register")}>
+            Crear cuenta
+          </Button>
+        </Stack>
+      </Stack>
     </Box>
   );
 }

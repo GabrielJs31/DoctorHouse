@@ -45,9 +45,7 @@ const LoadingModal = ({ open }) => {
 
   useEffect(() => {
     if (!open) return;
-    // Selección inicial aleatoria
     setRecurso(recursos[Math.floor(Math.random() * recursos.length)]);
-    // Luego cada 20s
     const timer = setInterval(() => {
       setRecurso(recursos[Math.floor(Math.random() * recursos.length)]);
     }, 20000);

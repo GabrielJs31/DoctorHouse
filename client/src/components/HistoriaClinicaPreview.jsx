@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Card,
@@ -11,8 +11,9 @@ import {
   TextField
 } from '@mui/material';
 import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
+import { getLogger } from '../services/logs';
+const log = getLogger('preview.historia');
 
-// Formatea títulos en Title Case: 'datos_personales' → 'Datos Personales'
 const formatTitle = (str) =>
   str
     .replace(/_/g, ' ')
@@ -20,7 +21,6 @@ const formatTitle = (str) =>
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
-// Animaciones para despliegue de contenido
 const container = {
   hidden: { opacity: 0, height: 0, overflow: 'hidden', y: -20 },
   visible: {
@@ -35,7 +35,6 @@ const item = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
-// ─── HistoriaClinicaPreview.jsx ───────────────────────────────────────────────
 const HistoriaClinicaPreview = ({ data, onSave }) => {
   const [showReport, setShowReport] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -45,16 +44,16 @@ const HistoriaClinicaPreview = ({ data, onSave }) => {
     if (data) {
       setEditedData(data);
       setEditMode(false);
+      try { log.debug('data_loaded', { keys: Object.keys(data).length }); } catch {}
     }
   }, [data]);
 
   if (!data) return null;
 
-  // Maneja cambio de valor primitivo
   const handlePrimitiveChange = (key, value) => {
     setEditedData(prev => ({ ...prev, [key]: value }));
   };
-  // Maneja cambio de valor anidado
+
   const handleNestedChange = (parentKey, childKey, value) => {
     setEditedData(prev => ({
       ...prev,
@@ -64,17 +63,18 @@ const HistoriaClinicaPreview = ({ data, onSave }) => {
 
   const handleSaveAll = () => {
     setEditMode(false);
-    if (onSave) onSave(editedData);
+    onSave?.(editedData);
+    try { log.info('save_all', { keys: Object.keys(editedData || {}).length }); } catch {}
   };
 
   const handleCancel = () => {
     setEditedData(data);
     setEditMode(false);
+    log.debug('edit_cancel_all');
   };
 
   return (
     <>
-      {/* Controles de mostrar/ocultar y editar */}
       <Box display="flex" justifyContent="center" mt={2} mb={2}>
         <Stack
           component={motion.div}
@@ -87,7 +87,7 @@ const HistoriaClinicaPreview = ({ data, onSave }) => {
             <Button
               variant="contained"
               color="primary"
-              onClick={() => setShowReport(prev => !prev)}
+              onClick={() => { setShowReport(prev => { const next = !prev; log.info('toggle_report', { show: next }); return next; }); }}
             >
               {showReport ? 'Ocultar Historia Clínica' : 'Ver Historia Clínica'}
             </Button>
@@ -102,7 +102,7 @@ const HistoriaClinicaPreview = ({ data, onSave }) => {
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               >
-                <Button variant="outlined" onClick={() => setEditMode(true)}>
+                <Button variant="outlined" onClick={() => { setEditMode(true); log.debug('edit_mode_on'); }}>
                   Editar Reporte
                 </Button>
               </motion.div>
@@ -137,7 +137,6 @@ const HistoriaClinicaPreview = ({ data, onSave }) => {
         </Stack>
       </Box>
 
-      {/* Reporte con estilo de Card para alineación */}
       <AnimatePresence initial={false}>
         {showReport && (
           <motion.div
@@ -161,7 +160,6 @@ const HistoriaClinicaPreview = ({ data, onSave }) => {
                           </Typography>
                         </Box>
 
-                        {/* Renderiza inputs con responsive y multiline */}
                         {value && typeof value === 'object' ? (
                           <Stack spacing={2}>
                             {Object.entries(value).map(([childKey, childVal]) => (

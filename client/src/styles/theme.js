@@ -21,7 +21,7 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          textTransform: 'none', // ← aquí quitamos las mayúsculas
+          textTransform: 'none',
         },
       },
     },

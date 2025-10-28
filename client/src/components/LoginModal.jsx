@@ -1,22 +1,25 @@
-import React from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   IconButton,
-  Typography
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { useTranslation } from 'react-i18next';
-import Auth from '../apps/auth/auth';
+  Typography,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import { AuthForms } from "../apps/auth/auth";
+import { getLogger } from "../services/logs";
+const log = getLogger("auth.login_modal");
 
 export default function LoginModal({ open, onClose, disableClose = false }) {
-  const { t } = useTranslation('auth');
-
   const handleClose = (_, reason) => {
-    if (disableClose && (reason === 'backdropClick' || reason === 'escapeKeyDown')) {
+    if (
+      disableClose &&
+      (reason === "backdropClick" || reason === "escapeKeyDown")
+    ) {
+      log.debug("close_blocked", { reason });
       return;
     }
+    log.debug("close_allowed", { reason });
     onClose();
   };
 
@@ -27,21 +30,22 @@ export default function LoginModal({ open, onClose, disableClose = false }) {
       disableEscapeKeyDown={disableClose}
       keepMounted
       maxWidth="xs"
+      fullWidth
     >
       <DialogTitle sx={{ m: 0, p: 2 }}>
-        <Typography variant="h6">{t('dialogTitle')}</Typography>
+        <Typography variant="h6">Iniciar sesión</Typography>
         {!disableClose && (
           <IconButton
-            aria-label={t('close')}
+            aria-label="Cerrar"
             onClick={onClose}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
+            sx={{ position: "absolute", right: 8, top: 8 }}
           >
             <CloseIcon />
           </IconButton>
         )}
       </DialogTitle>
       <DialogContent dividers>
-        <Auth onLoginSuccess={onClose} />
+        <AuthForms onLoginSuccess={onClose} />
       </DialogContent>
     </Dialog>
   );
